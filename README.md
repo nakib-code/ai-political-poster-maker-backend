@@ -10,8 +10,7 @@ The backend handles authentication, poster generation, image uploads, AI layout 
 
 **Production API:**
 
-[https://ai-political-poster-maker-backend-64aub7iqk.vercel.app/](https://ai-political-poster-maker-backend.vercel.app/)
-
+https://ai-political-poster-maker-backend.vercel.app/
 ---
 
 ## ✨ Features
