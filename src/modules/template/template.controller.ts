@@ -1,15 +1,13 @@
 import type { Request, Response } from "express";
-import {
-  getTemplates,
-  getTemplateById,
-} from "./template.service.js";
+
+import { templateService } from "./template.service.js";
 import { sendResponse } from "../../utils/sendResponse.js";
 
-export const getAllTemplates = async (
+const getAllTemplates = async (
   _req: Request,
   res: Response
 ) => {
-  const templates = await getTemplates();
+  const templates = await templateService.getTemplates();
 
   sendResponse(
     res,
@@ -19,20 +17,29 @@ export const getAllTemplates = async (
   );
 };
 
-export const getSingleTemplate = async (
+const getSingleTemplate = async (
   req: Request,
   res: Response
 ) => {
   const id = req.params.id;
 
   if (typeof id !== "string") {
-    return sendResponse(res, 400, "Invalid template ID");
+    return sendResponse(
+      res,
+      400,
+      "Invalid template ID"
+    );
   }
 
-  const template = await getTemplateById(id);
+  const template =
+    await templateService.getTemplateById(id);
 
   if (!template) {
-    return sendResponse(res, 404, "Template not found");
+    return sendResponse(
+      res,
+      404,
+      "Template not found"
+    );
   }
 
   sendResponse(
@@ -41,4 +48,9 @@ export const getSingleTemplate = async (
     "Template retrieved successfully",
     template
   );
+};
+
+export const templateController = {
+  getAllTemplates,
+  getSingleTemplate,
 };

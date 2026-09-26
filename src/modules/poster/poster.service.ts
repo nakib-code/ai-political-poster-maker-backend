@@ -1,30 +1,55 @@
 import { Poster } from "./poster.model.js";
 import { Template } from "../template/template.model.js";
-import { generatePosterLayout } from "../ai/ai.service.js";
 import { renderPoster } from "../renderer/renderer.service.js";
 import cloudinary from "../../config/cloudinary.js";
+import { aiService } from "../ai/ai.service.js";
 
 interface CreatePosterPayload {
   templateId: string;
-
   name: string;
   designation?: string;
   organization?: string;
-
   union?: string;
   thana?: string;
   district?: string;
-
   occasion: string;
   headline: string;
-
   photoUrls?: string[];
 }
 
-const uploadPoster = async (
-  buffer: Buffer
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const getPublicId = (url: string) => {
+  try {
+    const path = new URL(url).pathname;
+    const index = path.indexOf("/upload/");
+
+    if (index === -1) return null;
+
+    return path
+      .slice(index + 8)
+      .replace(/^v\d+\//, "")
+      .replace(/\.[^/.]+$/, "");
+  } catch {
+    return null;
+  }
+};
+
+const deleteImage = async (url: string) => {
+  const publicId = getPublicId(url);
+
+  if (!publicId) return;
+
+  try {
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+      invalidate: true,
+    });
+  } catch (error) {
+    console.error("Cloudinary delete failed:", error);
+  }
+};
+
+const uploadPoster = async (buffer: Buffer): Promise<string> =>
+  new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "ai-political-poster/generated",
@@ -32,9 +57,7 @@ const uploadPoster = async (
         format: "png",
       },
       (error, result) => {
-        if (error) {
-          return reject(error);
-        }
+        if (error) return reject(error);
 
         if (!result?.secure_url) {
           return reject(
@@ -48,9 +71,8 @@ const uploadPoster = async (
 
     stream.end(buffer);
   });
-};
 
-export const createPoster = async (
+const createPoster = async (
   userId: string,
   payload: CreatePosterPayload
 ) => {
@@ -82,8 +104,10 @@ export const createPoster = async (
     generationCount: 0,
   });
 
+  let imageUrl: string | null = null;
+
   try {
-    const layout = await generatePosterLayout({
+    const layout = await aiService.generatePosterLayout({
       occasion: payload.occasion,
       headline: payload.headline,
       templateTitle: template.title,
@@ -91,7 +115,7 @@ export const createPoster = async (
       photoSlots: template.layoutConfig.photoSlots,
     });
 
-    const imageBuffer = await renderPoster({
+    const buffer = await renderPoster({
       name: payload.name,
       designation: payload.designation,
       organization: payload.organization,
@@ -104,17 +128,18 @@ export const createPoster = async (
       layout,
     });
 
-    const generatedImageUrl =
-      await uploadPoster(imageBuffer);
+    imageUrl = await uploadPoster(buffer);
 
     poster.status = "COMPLETED";
-    poster.generatedImageUrl = generatedImageUrl;
+    poster.generatedImageUrl = imageUrl;
     poster.generationCount = 1;
 
     await poster.save();
 
     return poster;
   } catch (error) {
+    if (imageUrl) await deleteImage(imageUrl);
+
     poster.status = "FAILED";
     poster.generationCount += 1;
 
@@ -124,25 +149,15 @@ export const createPoster = async (
   }
 };
 
-export const getMyPosters = async (
-  userId: string
-) => {
-  return Poster.find({ userId }).sort({
-    createdAt: -1,
-  });
-};
+const getMyPosters = async (userId: string) =>Poster.find({ userId }).sort({ createdAt: -1 });
 
-export const getPosterById = async (
-  userId: string,
-  posterId: string
-) => {
-  return Poster.findOne({
+const getPosterById = async (userId: string,posterId: string) =>
+  Poster.findOne({
     _id: posterId,
     userId,
   });
-};
 
-export const regeneratePoster = async (
+const regeneratePoster = async (
   userId: string,
   posterId: string
 ) => {
@@ -170,11 +185,15 @@ export const regeneratePoster = async (
     throw new Error("Template not found");
   }
 
+  const oldImage = poster.generatedImageUrl;
+
   poster.status = "GENERATING";
   await poster.save();
 
+  let newImage: string | null = null;
+
   try {
-    const layout = await generatePosterLayout({
+    const layout = await aiService.generatePosterLayout({
       occasion: poster.occasion,
       headline: poster.headline,
       templateTitle: template.title,
@@ -182,7 +201,7 @@ export const regeneratePoster = async (
       photoSlots: template.layoutConfig.photoSlots,
     });
 
-    const imageBuffer = await renderPoster({
+    const buffer = await renderPoster({
       name: poster.name,
       designation: poster.designation,
       organization: poster.organization,
@@ -195,20 +214,62 @@ export const regeneratePoster = async (
       layout,
     });
 
-    const generatedImageUrl =
-      await uploadPoster(imageBuffer);
+    newImage = await uploadPoster(buffer);
+
+    if (oldImage) {
+      await deleteImage(oldImage);
+    }
 
     poster.status = "COMPLETED";
-    poster.generatedImageUrl = generatedImageUrl;
+    poster.generatedImageUrl = newImage;
     poster.generationCount += 1;
 
     await poster.save();
 
     return poster;
   } catch (error) {
+    if (newImage) await deleteImage(newImage);
+
     poster.status = "FAILED";
     await poster.save();
 
     throw error;
   }
+};
+
+const deletePoster = async (
+  userId: string,
+  posterId: string
+) => {
+  const poster = await Poster.findOne({
+    _id: posterId,
+    userId,
+  });
+
+  if (!poster) {
+    throw new Error("Poster not found");
+  }
+
+  if (poster.generatedImageUrl) {
+    await deleteImage(poster.generatedImageUrl);
+  }
+
+  for (const photoUrl of poster.photoUrls) {
+    await deleteImage(photoUrl);
+  }
+
+  await Poster.deleteOne({
+    _id: posterId,
+    userId,
+  });
+
+  return poster;
+};
+
+export const posterService = {
+  createPoster,
+  getMyPosters,
+  getPosterById,
+  regeneratePoster,
+  deletePoster,
 };

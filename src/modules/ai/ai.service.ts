@@ -1,14 +1,19 @@
 import { Type } from "@google/genai";
+
 import { gemini } from "../../config/gemini.js";
 import type { PosterLayoutSuggestion } from "./ai.interface.js";
 
-export const generatePosterLayout = async (input: {
+interface LayoutInput {
   occasion: string;
   headline: string;
   templateTitle: string;
   colors: string[];
   photoSlots: number;
-}): Promise<PosterLayoutSuggestion> => {
+}
+
+const generatePosterLayout = async (
+  input: LayoutInput
+): Promise<PosterLayoutSuggestion> => {
   const prompt = `
 You are a professional poster layout designer.
 
@@ -36,15 +41,9 @@ Rules:
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          backgroundStyle: {
-            type: Type.STRING,
-          },
-          primaryColor: {
-            type: Type.STRING,
-          },
-          secondaryColor: {
-            type: Type.STRING,
-          },
+          backgroundStyle: { type: Type.STRING },
+          primaryColor: { type: Type.STRING },
+          secondaryColor: { type: Type.STRING },
           textAlignment: {
             type: Type.STRING,
             enum: ["left", "center", "right"],
@@ -53,9 +52,7 @@ Rules:
             type: Type.STRING,
             enum: ["single", "horizontal", "grid"],
           },
-          decoration: {
-            type: Type.STRING,
-          },
+          decoration: { type: Type.STRING },
           fontStyle: {
             type: Type.STRING,
             enum: ["bold", "elegant", "modern"],
@@ -78,5 +75,11 @@ Rules:
     throw new Error("Gemini returned an empty response");
   }
 
-  return JSON.parse(response.text) as PosterLayoutSuggestion;
+  return JSON.parse(
+    response.text
+  ) as PosterLayoutSuggestion;
+};
+
+export const aiService = {
+  generatePosterLayout,
 };

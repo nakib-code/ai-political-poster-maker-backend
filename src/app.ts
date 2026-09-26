@@ -4,6 +4,8 @@ import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
 import routes from "./routes/index.js";
+import { notFound } from "./middlewares/notFound.middleware.js";
+import errorHandler from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -34,5 +36,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api", routes);
+
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;

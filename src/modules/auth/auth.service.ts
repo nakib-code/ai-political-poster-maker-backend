@@ -1,14 +1,15 @@
 import { User } from "../user/user.model.js";
-import { hashPassword, comparePassword } from "../../utils/bcrypt.js";
+import {
+  comparePassword,
+  hashPassword,
+} from "../../utils/bcrypt.js";
 import { createToken } from "../../utils/jwt.js";
 import type {
   RegisterInput,
   LoginInput,
 } from "./auth.interface.js";
 
-export const registerUser = async (
-  payload: RegisterInput
-) => {
+const registerUser = async (payload: RegisterInput) => {
   const { name, email, phone, password } = payload;
 
   if (email) {
@@ -56,9 +57,7 @@ export const registerUser = async (
   };
 };
 
-export const loginUser = async (
-  payload: LoginInput
-) => {
+const loginUser = async (payload: LoginInput) => {
   const { email, phone, password } = payload;
 
   const query = email
@@ -99,7 +98,7 @@ export const loginUser = async (
   };
 };
 
-export const getMe = async (userId: string) => {
+const getMe = async (userId: string) => {
   const user = await User.findById(userId).select(
     "-passwordHash"
   );
@@ -109,4 +108,10 @@ export const getMe = async (userId: string) => {
   }
 
   return user;
+};
+
+export const authService = {
+  registerUser,
+  loginUser,
+  getMe,
 };

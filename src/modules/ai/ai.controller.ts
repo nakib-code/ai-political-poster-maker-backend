@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
-import { generatePosterLayout } from "./ai.service.js";
+
+import { aiService } from "./ai.service.js";
 import { sendResponse } from "../../utils/sendResponse.js";
 
-export const generateLayout = async (
+const generateLayout = async (
   req: Request,
   res: Response
 ) => {
@@ -15,13 +16,14 @@ export const generateLayout = async (
       photoSlots,
     } = req.body;
 
-    const result = await generatePosterLayout({
-      occasion,
-      headline,
-      templateTitle,
-      colors,
-      photoSlots,
-    });
+    const result =
+      await aiService.generatePosterLayout({
+        occasion,
+        headline,
+        templateTitle,
+        colors,
+        photoSlots,
+      });
 
     sendResponse(
       res,
@@ -37,4 +39,8 @@ export const generateLayout = async (
 
     sendResponse(res, 500, message);
   }
+};
+
+export const aiController = {
+  generateLayout,
 };

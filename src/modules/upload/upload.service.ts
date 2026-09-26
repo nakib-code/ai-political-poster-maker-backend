@@ -1,9 +1,7 @@
 import cloudinary from "../../config/cloudinary.js";
 
-export const uploadImage = async (
-  buffer: Buffer
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const uploadImage = async ( buffer: Buffer): Promise<string> =>
+  new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "ai-political-poster",
@@ -22,4 +20,7 @@ export const uploadImage = async (
 
     stream.end(buffer);
   });
+
+export const uploadService = {
+  uploadImage,
 };

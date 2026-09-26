@@ -1,13 +1,9 @@
 import { Router } from "express";
-import {
-  create,
-  getMine,
-  getSingle,
-  regenerate,
-} from "./poster.controller.js";
+
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { createPosterValidation } from "./poster.validation.js";
+import { posterController } from "./poster.controller.js";
 
 const router = Router();
 
@@ -16,16 +12,24 @@ router.use(authMiddleware);
 router.post(
   "/",
   validate(createPosterValidation),
-  create
+  posterController.create
 );
+
+router.get("/", posterController.getMine);
 
 router.post(
   "/:id/regenerate",
-  regenerate
+  posterController.regenerate
 );
 
-router.get("/", getMine);
-router.get("/:id", getSingle);
+router.delete(
+  "/:id",
+  posterController.remove
+);
 
+router.get(
+  "/:id",
+  posterController.getSingle
+);
 
 export const posterRoute = router;

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { upload } from "./upload.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { uploadController } from "./upload.controller.js";
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.post(
   "/images",
   authMiddleware,
   uploadMiddleware.array("images", 3),
-  upload
+  uploadController.upload
 );
 
 export const uploadRoute = router;

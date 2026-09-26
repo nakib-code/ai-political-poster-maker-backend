@@ -1,14 +1,17 @@
 import { Template } from "./template.model.js";
 
-export const getTemplates = async () => {
-  return Template.find({ isActive: true }).sort({
+const getTemplates = async () =>
+  Template.find({ isActive: true }).sort({
     createdAt: -1,
   });
-};
 
-export const getTemplateById = async (id: string) => {
-  return Template.findOne({
+const getTemplateById = async (id: string) =>
+  Template.findOne({
     _id: id,
     isActive: true,
   });
+
+export const templateService = {
+  getTemplates,
+  getTemplateById,
 };
