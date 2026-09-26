@@ -28,15 +28,16 @@ const apiLimiter = rateLimit({
 
 app.use("/api", apiLimiter);
 
-app.get("/health", (_req, res) => {
+
+app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
     message: "AI Political Poster API is running",
   });
 });
 
-app.use("/api", routes);
 
+app.use("/api", routes);
 app.use(notFound);
 app.use(errorHandler);
 
